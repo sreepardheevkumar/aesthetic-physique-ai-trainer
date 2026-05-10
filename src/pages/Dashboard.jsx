@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { StatCard, StreakCard, XPLevelCard, MotivationCard } from '../components/dashboard/StatCards';
 import { getDailyQuote } from '../data/quotes';
 import { calculateBMR, calculateTDEE, calculateMacros } from '../utils/calculators';
-import { Dumbbell, Utensils, TrendingUp } from 'lucide-react';
+import { Utensils, TrendingUp } from 'lucide-react';
 
 export default function Dashboard() {
   const { userProfile } = useAppContext();
