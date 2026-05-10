@@ -1,98 +1,135 @@
-import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { Plus, Flame, Droplet } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Search, X } from 'lucide-react';
+import { useIndexedDB } from '../hooks/useIndexedDB';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { MacroRing, WaterTracker } from '../components/nutrition/NutritionComponents';
+import { foodDatabase, mealTypes, searchFoods } from '../data/nutritionData';
+import { calculateBMR, calculateTDEE, calculateMacros } from '../utils/calculators';
+import { useAppContext } from '../context/AppContext';
 
 export default function Nutrition() {
-  const macros = [
-    { name: 'Protein', value: 120, color: '#7c3aed' },
-    { name: 'Carbs', value: 200, color: '#06b6d4' },
-    { name: 'Fats', value: 65, color: '#f59e0b' }
-  ];
+  const { userProfile } = useAppContext();
+  const today = new Date().toISOString().split('T')[0];
+  const { data: todayLog, putData: saveTodayLog } = useIndexedDB('nutritionLogs', today);
+
+  const [water, setWater] = useState(todayLog?.water || 0);
+  const [meals, setMeals] = useState(todayLog?.meals || { Breakfast: [], Lunch: [], Dinner: [], Snacks: [] });
+  const [searchModal, setSearchModal] = useState(null); // which meal is open
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const bmr = userProfile?.age ? calculateBMR(Number(userProfile.weight), Number(userProfile.height), Number(userProfile.age), userProfile.gender) : 2000;
+  const tdee = calculateTDEE(bmr, userProfile?.activityLevel || 'moderate');
+  const targets = calculateMacros(tdee, userProfile?.goal || 'Aesthetic Physique', Number(userProfile?.weight || 70));
+
+  const allFoods = Object.values(meals).flat();
+  const consumed = {
+    protein: Math.round(allFoods.reduce((s, f) => s + f.protein, 0)),
+    carbs: Math.round(allFoods.reduce((s, f) => s + f.carbs, 0)),
+    fat: Math.round(allFoods.reduce((s, f) => s + f.fat, 0)),
+  };
+
+  const addFood = async (mealType, food) => {
+    const updated = { ...meals, [mealType]: [...(meals[mealType] || []), food] };
+    setMeals(updated);
+    await saveTodayLog({ date: today, meals: updated, water });
+    setSearchModal(null);
+    setSearchQuery('');
+  };
+
+  const addWater = async (ml) => {
+    const newWater = water + ml;
+    setWater(newWater);
+    await saveTodayLog({ date: today, meals, water: newWater });
+  };
+
+  const results = searchFoods(searchQuery);
 
   return (
     <div className="page-container pt-8">
       <h1 className="text-2xl font-display font-bold mb-6">Nutrition</h1>
 
-      {/* Calories Summary */}
-      <Card variant="dark" className="mb-6 relative overflow-hidden flex flex-col items-center justify-center p-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 to-cyan-600/10" />
-        
-        <div className="relative w-48 h-48 mb-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={macros}
-                innerRadius={70}
-                outerRadius={90}
-                paddingAngle={5}
-                dataKey="value"
-                stroke="none"
-              >
-                {macros.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-bold text-white">1,850</span>
-            <span className="text-xs text-white/50 uppercase tracking-wide">Kcal Left</span>
-          </div>
-        </div>
+      {/* Macro Ring */}
+      <Card variant="dark" className="!p-6 mb-6 flex flex-col items-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/5 to-cyan-600/5" />
+        <MacroRing consumed={consumed} target={targets} />
+      </Card>
 
-        <div className="flex w-full justify-between px-4 relative z-10">
-          {macros.map((macro) => (
-            <div key={macro.name} className="text-center">
-              <div className="flex items-center gap-1 justify-center mb-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: macro.color }} />
-                <span className="text-xs text-white/70">{macro.name}</span>
-              </div>
-              <span className="font-bold text-sm">{macro.value}g</span>
-            </div>
-          ))}
-        </div>
+      {/* Water */}
+      <Card variant="glass" className="!p-4 mb-6">
+        <h3 className="text-sm font-semibold mb-4">💧 Hydration</h3>
+        <WaterTracker current={water} target={3000} onAdd={addWater} />
       </Card>
 
       {/* Meals */}
       <h2 className="section-header">Today's Meals</h2>
       <div className="space-y-4 mb-8">
-        {['Breakfast', 'Lunch', 'Dinner', 'Snacks'].map((meal) => (
-          <Card key={meal} variant="glass" className="flex justify-between items-center p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                <Plus className="text-white/50" />
+        {mealTypes.slice(0, 4).map(mealType => {
+          const mealFoods = meals[mealType] || [];
+          const mealCals = Math.round(mealFoods.reduce((s, f) => s + f.calories, 0));
+          return (
+            <Card key={mealType} variant="glass" className="!p-4">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="font-semibold text-sm">{mealType}</h4>
+                <div className="flex items-center gap-3">
+                  {mealCals > 0 && <span className="text-xs text-white/40">{mealCals} kcal</span>}
+                  <button onClick={() => setSearchModal(mealType)}
+                    className="w-7 h-7 rounded-full bg-violet-600/30 text-violet-400 flex items-center justify-center hover:bg-violet-600/50 transition-colors">
+                    <Plus size={14} />
+                  </button>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold text-sm">{meal}</h4>
-                <p className="text-xs text-white/40">Recommend: 400-600 kcal</p>
-              </div>
-            </div>
-            <Button variant="icon">
-              <Plus size={20} />
-            </Button>
-          </Card>
-        ))}
+              {mealFoods.length === 0
+                ? <p className="text-xs text-white/30 text-center py-2">No foods logged yet</p>
+                : mealFoods.map((f, i) => (
+                    <div key={i} className="flex justify-between items-center py-1.5 border-t border-white/5">
+                      <span className="text-xs text-white/80">{f.name}</span>
+                      <div className="flex gap-3 text-[10px] text-white/40">
+                        <span>{f.protein}g P</span>
+                        <span>{f.calories} kcal</span>
+                      </div>
+                    </div>
+                  ))
+              }
+            </Card>
+          );
+        })}
       </div>
 
-      {/* Water Tracking */}
-      <h2 className="section-header">Hydration</h2>
-      <Card variant="glass" className="flex items-center justify-between p-4 mb-8">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-cyan-600/20 flex items-center justify-center">
-            <Droplet className="text-cyan-400 fill-current" />
-          </div>
-          <div>
-            <h4 className="font-semibold text-sm">Water Intake</h4>
-            <p className="text-xs text-cyan-400">1.5 / 3.0 Liters</p>
+      {/* Food Search Modal */}
+      {searchModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex flex-end" onClick={() => setSearchModal(null)}>
+          <div className="absolute bottom-0 left-0 right-0 bg-dark-800 rounded-t-3xl max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <h3 className="font-bold">Add to {searchModal}</h3>
+              <button onClick={() => setSearchModal(null)}><X size={20} className="text-white/50" /></button>
+            </div>
+            <div className="p-4 border-b border-white/5">
+              <div className="flex gap-2 glass rounded-xl px-3 py-2">
+                <Search size={16} className="text-white/40 flex-shrink-0 mt-0.5" />
+                <input autoFocus className="flex-1 bg-transparent text-sm placeholder-white/30 outline-none"
+                  placeholder="Search foods (dal, chicken, oats...)"
+                  value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              </div>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4 space-y-2">
+              {results.map(food => (
+                <div key={food.id} onClick={() => addFood(searchModal, food)}
+                  className="flex justify-between items-center p-3 glass rounded-xl cursor-pointer hover:bg-violet-600/10 transition-colors active:scale-98">
+                  <div>
+                    <p className="text-sm font-medium">{food.name}</p>
+                    <p className="text-[10px] text-white/40">{food.serving} · {food.category}</p>
+                  </div>
+                  <div className="text-right text-xs">
+                    <p className="text-white font-bold">{food.calories} kcal</p>
+                    <p className="text-white/40">{food.protein}g protein</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <Button variant="glass" className="!p-2 !rounded-xl">
-          <Plus size={20} />
-        </Button>
-      </Card>
+      )}
     </div>
   );
 }

@@ -1,163 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Dumbbell, Target, User, Activity, ArrowRight, ArrowLeft } from 'lucide-react';
+import { StepHeader, SelectionGrid } from '../components/onboarding/OnboardingComponents';
+
+const TOTAL_STEPS = 5;
 
 export default function Onboarding() {
   const { saveProfile } = useAppContext();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    gender: '',
-    goal: '',
-    experience: '',
-    equipment: '',
-    height: '',
-    weight: '',
-    age: ''
+    gender: '', goal: '', experience: '', equipment: '',
+    age: '', weight: '', height: '', activityLevel: 'moderate'
   });
 
-  const updateForm = (key, value) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleNext = () => {
-    if (step < 5) setStep(step + 1);
-    else handleComplete();
-  };
-
-  const handleBack = () => {
-    if (step > 1) setStep(step - 1);
-  };
-
-  const handleComplete = async () => {
-    await saveProfile(formData);
-    navigate('/');
-  };
-
-  const renderStep = () => {
-    switch(step) {
-      case 1:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-display font-bold text-center">Select Gender</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {['Male', 'Female'].map(g => (
-                <Card 
-                  key={g} 
-                  variant={formData.gender === g ? 'violet' : 'glass'}
-                  className={`text-center cursor-pointer transition-all ${formData.gender === g ? 'ring-2 ring-violet-500' : ''}`}
-                  onClick={() => updateForm('gender', g)}
-                >
-                  <User size={48} className={`mx-auto mb-2 ${formData.gender === g ? 'text-violet-400' : 'text-white/50'}`} />
-                  <p className="font-semibold">{g}</p>
-                </Card>
-              ))}
-            </div>
-          </div>
-        );
-      case 2:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-display font-bold text-center">Your Goal</h2>
-            <div className="space-y-3">
-              {['Fat Loss', 'Lean Muscle', 'Aesthetic Physique'].map(g => (
-                <Card 
-                  key={g} 
-                  variant={formData.goal === g ? 'violet' : 'glass'}
-                  className="flex items-center gap-4 cursor-pointer"
-                  onClick={() => updateForm('goal', g)}
-                >
-                  <Target className={formData.goal === g ? 'text-violet-400' : 'text-white/50'} />
-                  <span className="font-semibold">{g}</span>
-                </Card>
-              ))}
-            </div>
-          </div>
-        );
-      case 3:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-display font-bold text-center">Experience Level</h2>
-            <div className="space-y-3">
-              {['Beginner', 'Intermediate', 'Advanced'].map(exp => (
-                <Card 
-                  key={exp} 
-                  variant={formData.experience === exp ? 'violet' : 'glass'}
-                  className="flex items-center gap-4 cursor-pointer"
-                  onClick={() => updateForm('experience', exp)}
-                >
-                  <Activity className={formData.experience === exp ? 'text-violet-400' : 'text-white/50'} />
-                  <span className="font-semibold">{exp}</span>
-                </Card>
-              ))}
-            </div>
-          </div>
-        );
-      case 4:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-display font-bold text-center">Available Equipment</h2>
-            <div className="space-y-3">
-              {['No Equipment', 'Dumbbells Only', 'Full Gym'].map(eq => (
-                <Card 
-                  key={eq} 
-                  variant={formData.equipment === eq ? 'violet' : 'glass'}
-                  className="flex items-center gap-4 cursor-pointer"
-                  onClick={() => updateForm('equipment', eq)}
-                >
-                  <Dumbbell className={formData.equipment === eq ? 'text-violet-400' : 'text-white/50'} />
-                  <span className="font-semibold">{eq}</span>
-                </Card>
-              ))}
-            </div>
-          </div>
-        );
-      case 5:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-display font-bold text-center">Your Stats</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-white/70 block mb-1">Age</label>
-                <input 
-                  type="number" 
-                  className="input-field" 
-                  placeholder="e.g. 25" 
-                  value={formData.age}
-                  onChange={(e) => updateForm('age', e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-white/70 block mb-1">Weight (kg)</label>
-                <input 
-                  type="number" 
-                  className="input-field" 
-                  placeholder="e.g. 70"
-                  value={formData.weight}
-                  onChange={(e) => updateForm('weight', e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-white/70 block mb-1">Height (cm)</label>
-                <input 
-                  type="number" 
-                  className="input-field" 
-                  placeholder="e.g. 175"
-                  value={formData.height}
-                  onChange={(e) => updateForm('height', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+  const update = (key, value) => setFormData(prev => ({ ...prev, [key]: value }));
 
   const isNextDisabled = () => {
     if (step === 1 && !formData.gender) return true;
@@ -168,50 +28,90 @@ export default function Onboarding() {
     return false;
   };
 
-  return (
-    <div className="page-container flex flex-col justify-between pt-12 pb-8">
-      <div>
-        <div className="flex justify-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-violet-600/20 flex items-center justify-center animate-glow-pulse">
-            <Dumbbell className="text-violet-400 w-8 h-8" />
-          </div>
-        </div>
-        
-        {/* Progress Bar */}
-        <div className="w-full h-1 bg-white/10 rounded-full mb-8">
-          <div 
-            className="h-full bg-violet-500 rounded-full transition-all duration-300"
-            style={{ width: `${(step / 5) * 100}%` }}
-          />
-        </div>
+  const handleNext = async () => {
+    if (step < TOTAL_STEPS) { setStep(s => s + 1); return; }
+    await saveProfile({ ...formData, createdAt: new Date().toISOString(), xp: 0, streak: 0 });
+    navigate('/');
+  };
 
+  const genderOptions = [
+    { value: 'Male', label: 'Male', icon: '♂️', description: 'Optimized for testosterone-driven gains' },
+    { value: 'Female', label: 'Female', icon: '♀️', description: 'Programs designed for female physiology' },
+  ];
+  const goalOptions = [
+    { value: 'Fat Loss', label: 'Fat Loss', icon: '🔥', description: 'Burn fat, reveal muscle' },
+    { value: 'Lean Muscle', label: 'Lean Muscle', icon: '💪', description: 'Build muscle, stay lean' },
+    { value: 'Aesthetic Physique', label: 'Aesthetic Body', icon: '🏆', description: 'Proportional, aesthetic physique' },
+    { value: 'Strength', label: 'Pure Strength', icon: '⚡', description: 'Get as strong as possible' },
+    { value: 'Athletic', label: 'Athletic', icon: '🏃', description: 'Speed, power, performance' },
+    { value: 'Beginner Transformation', label: 'Transform', icon: '🌟', description: 'Start your journey from zero' },
+  ];
+  const expOptions = [
+    { value: 'Beginner', label: 'Beginner', icon: '🌱', description: '0–1 year of training' },
+    { value: 'Intermediate', label: 'Intermediate', icon: '💪', description: '1–3 years of training' },
+    { value: 'Advanced', label: 'Advanced', icon: '🏅', description: '3+ years of training' },
+  ];
+  const equipOptions = [
+    { value: 'No Equipment', label: 'No Equipment', icon: '🏠', description: 'Bodyweight only' },
+    { value: 'Dumbbells Only', label: 'Dumbbells', icon: '🏋️', description: 'Dumbbells available' },
+    { value: 'Full Gym', label: 'Full Gym', icon: '🏟️', description: 'Access to a commercial gym' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-hero-gradient flex flex-col px-5 py-10">
+      {/* Logo */}
+      <div className="text-center mb-6">
+        <div className="text-3xl mb-2">⚡</div>
+        <p className="text-xs text-white/30 uppercase tracking-widest font-medium">Aesthetic Physique</p>
+      </div>
+
+      {/* Step Progress */}
+      <div className="flex gap-1.5 mb-8">
+        {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+          <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-500 ${i < step ? 'bg-violet-500' : 'bg-white/10'}`} />
+        ))}
+      </div>
+
+      <StepHeader step={step} totalSteps={TOTAL_STEPS} />
+
+      <div className="flex-1">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -20, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -30, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
           >
-            {renderStep()}
+            {step === 1 && <SelectionGrid options={genderOptions} selected={formData.gender} onSelect={v => update('gender', v)} columns={2} />}
+            {step === 2 && <SelectionGrid options={goalOptions} selected={formData.goal} onSelect={v => update('goal', v)} columns={2} />}
+            {step === 3 && <SelectionGrid options={expOptions} selected={formData.experience} onSelect={v => update('experience', v)} columns={1} />}
+            {step === 4 && <SelectionGrid options={equipOptions} selected={formData.equipment} onSelect={v => update('equipment', v)} columns={1} />}
+            {step === 5 && (
+              <div className="space-y-4">
+                {[{ key: 'age', label: 'Age', placeholder: 'e.g. 22', type: 'number' },
+                  { key: 'weight', label: 'Weight (kg)', placeholder: 'e.g. 72', type: 'number' },
+                  { key: 'height', label: 'Height (cm)', placeholder: 'e.g. 175', type: 'number' }
+                ].map(({ key, label, placeholder, type }) => (
+                  <div key={key}>
+                    <label className="text-sm text-white/60 block mb-1.5 font-medium">{label}</label>
+                    <input type={type} inputMode="decimal" className="input-field" placeholder={placeholder}
+                      value={formData[key]} onChange={e => update(key, e.target.value)} />
+                  </div>
+                ))}
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <div className="flex gap-4 mt-8">
+      <div className="flex gap-3 mt-8 pt-4">
         {step > 1 && (
-          <Button variant="glass" className="w-14 h-14 !p-0 flex-shrink-0" onClick={handleBack}>
-            <ArrowLeft />
+          <Button variant="glass" className="!w-14 !h-14 !p-0 flex-shrink-0" onClick={() => setStep(s => s - 1)}>
+            <ArrowLeft size={20} />
           </Button>
         )}
-        <Button 
-          variant="primary" 
-          className="flex-1 h-14" 
-          onClick={handleNext}
-          disabled={isNextDisabled()}
-        >
-          {step === 5 ? 'Start Journey' : 'Continue'}
-          {step < 5 && <ArrowRight className="w-5 h-5" />}
+        <Button variant="primary" className="flex-1 !h-14 text-base" onClick={handleNext} disabled={isNextDisabled()}>
+          {step === TOTAL_STEPS ? '🚀 Start My Journey' : 'Continue'}
+          {step < TOTAL_STEPS && <ArrowRight size={20} />}
         </Button>
       </div>
     </div>
