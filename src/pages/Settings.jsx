@@ -5,11 +5,13 @@ import { useAppContext } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { getProfileInsights } from '../utils/profileInsights';
 
 export default function Settings() {
   const { userProfile, resetProfile } = useAppContext();
   const { isDarkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const insights = getProfileInsights(userProfile || {});
 
   const handleReset = async () => {
     if (window.confirm("Are you sure you want to reset all data? This cannot be undone.")) {
@@ -48,6 +50,7 @@ export default function Settings() {
         <div>
           <h2 className="font-bold text-lg">{userProfile?.name || 'Athlete'}</h2>
           <p className="text-xs text-white/50">{userProfile?.goal || 'No goal set'} · {userProfile?.daysPerWeek ? `${userProfile.daysPerWeek} days/week` : ''}</p>
+          <p className="text-[11px] text-violet-300/80 mt-1">{insights.segment}</p>
         </div>
         <Button variant="glass" className="ml-auto !px-3 !py-1.5 text-xs" onClick={() => navigate('/onboarding')}>Edit</Button>
       </Card>

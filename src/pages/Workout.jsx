@@ -7,9 +7,11 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { getProgramByProfile } from '../data/workoutPrograms';
 import { exercises } from '../data/exercises';
+import { useWorkoutContext } from '../context/WorkoutContext';
 
 export default function Workout() {
   const { userProfile } = useAppContext();
+  const { startWorkout } = useWorkoutContext();
   const navigate = useNavigate();
   const program = getProgramByProfile(userProfile || {});
   const todayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
@@ -33,6 +35,20 @@ export default function Workout() {
           <p className="text-white/40 text-xs mt-0.5">{program.name}</p>
         </div>
       </div>
+
+      <Card variant="glass" className="!p-4 mb-6">
+        <p className="text-xs uppercase tracking-wider text-cyan-400 font-bold mb-2">{program.segment}</p>
+        <p className="text-sm text-white/75 leading-relaxed mb-3">
+          This plan emphasizes {program.trainingBias}.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {program.priorities.map(priority => (
+            <span key={priority} className="text-[11px] px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-white/70">
+              {priority}
+            </span>
+          ))}
+        </div>
+      </Card>
 
       {/* Weekly calendar */}
       <div className="flex gap-2 mb-8 overflow-x-auto pb-1 no-scrollbar">
@@ -63,6 +79,9 @@ export default function Workout() {
             </div>
             <Badge variant={intensityColor[selectedDayPlan.intensity] || 'neutral'}>{selectedDayPlan.intensity}</Badge>
           </div>
+          {selectedDayPlan.coachTip && (
+            <p className="text-xs text-cyan-300/80 leading-relaxed">{selectedDayPlan.coachTip}</p>
+          )}
         </div>
       )}
 
@@ -75,6 +94,17 @@ export default function Workout() {
         </Card>
       ) : (
         <div className="space-y-3 mb-8">
+          {selectedDayPlan?.warmup?.length > 0 && (
+            <Card variant="glass" className="!p-4">
+              <p className="text-xs uppercase tracking-wider text-white/35 font-semibold mb-2">Warm-up</p>
+              <div className="space-y-1">
+                {selectedDayPlan.warmup.map((item, index) => (
+                  <p key={index} className="text-xs text-white/65">• {item}</p>
+                ))}
+              </div>
+            </Card>
+          )}
+
           {dayExercises.map((ex, idx) => (
             <Card key={idx} variant="dark" className="!p-0 overflow-hidden">
               <div className="flex gap-0">
@@ -115,11 +145,29 @@ export default function Workout() {
               )}
             </Card>
           ))}
+
+          {selectedDayPlan?.cooldown?.length > 0 && (
+            <Card variant="glass" className="!p-4">
+              <p className="text-xs uppercase tracking-wider text-white/35 font-semibold mb-2">Cooldown</p>
+              <div className="space-y-1">
+                {selectedDayPlan.cooldown.map((item, index) => (
+                  <p key={index} className="text-xs text-white/65">• {item}</p>
+                ))}
+              </div>
+            </Card>
+          )}
         </div>
       )}
 
       {selectedDayPlan?.type !== 'Rest' && (
-        <Button variant="primary" className="w-full py-4 text-lg sticky bottom-28" onClick={() => navigate('/workout/active')}>
+        <Button
+          variant="primary"
+          className="w-full py-4 text-lg sticky bottom-28"
+          onClick={() => {
+            startWorkout(selectedDayPlan);
+            navigate('/workout/active');
+          }}
+        >
           <Play className="fill-current" /> Start Workout
         </Button>
       )}

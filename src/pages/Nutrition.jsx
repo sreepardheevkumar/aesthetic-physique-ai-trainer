@@ -4,14 +4,16 @@ import { useIndexedDB } from '../hooks/useIndexedDB';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { MacroRing, WaterTracker } from '../components/nutrition/NutritionComponents';
-import { foodDatabase, mealTypes, searchFoods } from '../data/nutritionData';
+import { mealTypes, searchFoods } from '../data/nutritionData';
 import { calculateBMR, calculateTDEE, calculateMacros } from '../utils/calculators';
 import { useAppContext } from '../context/AppContext';
+import { getProfileInsights } from '../utils/profileInsights';
 
 export default function Nutrition() {
   const { userProfile } = useAppContext();
   const today = new Date().toISOString().split('T')[0];
   const { data: todayLog, putData: saveTodayLog } = useIndexedDB('nutritionLogs', today);
+  const insights = getProfileInsights(userProfile || {});
 
   const [water, setWater] = useState(todayLog?.water || 0);
   const [meals, setMeals] = useState(todayLog?.meals || { Breakfast: [], Lunch: [], Dinner: [], Snacks: [] });
@@ -21,7 +23,7 @@ export default function Nutrition() {
   const [customFood, setCustomFood] = useState({ name: '', calories: '', protein: '', carbs: '', fat: '' });
 
   const bmr = userProfile?.age ? calculateBMR(Number(userProfile.weight), Number(userProfile.height), Number(userProfile.age), userProfile.gender) : 2000;
-  const tdee = calculateTDEE(bmr, userProfile?.activityLevel || 'moderate');
+  const tdee = calculateTDEE(bmr, insights.activityLevel);
   const targets = calculateMacros(tdee, userProfile?.goal || 'Aesthetic Physique', Number(userProfile?.weight || 70));
 
   const allFoods = Object.values(meals).flat();
@@ -74,10 +76,20 @@ export default function Nutrition() {
         <MacroRing consumed={consumed} target={targets} />
       </Card>
 
+      <Card variant="glass" className="!p-4 mb-6">
+        <p className="text-xs uppercase tracking-wider text-cyan-400 font-bold mb-2">{insights.segment}</p>
+        <p className="text-sm text-white/75 mb-3">Nutrition focus for your current profile:</p>
+        <div className="space-y-2">
+          {insights.nutritionFocus.map((item) => (
+            <p key={item} className="text-xs text-white/55">• {item}</p>
+          ))}
+        </div>
+      </Card>
+
       {/* Water */}
       <Card variant="glass" className="!p-4 mb-6">
         <h3 className="text-sm font-semibold mb-4">💧 Hydration</h3>
-        <WaterTracker current={water} target={3000} onAdd={addWater} />
+        <WaterTracker current={water} target={insights.hydrationTarget} onAdd={addWater} />
       </Card>
 
       {/* Meals */}

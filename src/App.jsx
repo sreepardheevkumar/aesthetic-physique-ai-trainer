@@ -23,7 +23,7 @@ const ProtectedRoute = ({ children }) => {
 
 const AppContent = () => {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/onboarding" element={<Onboarding />} />
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
