@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, ChevronRight } from 'lucide-react';
+import { Play, ChevronRight, Dumbbell } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -25,6 +25,9 @@ export default function Dashboard() {
   const macros = calculateMacros(tdee, userProfile?.goal || 'Aesthetic Physique', Number(userProfile?.weight || 70));
 
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric' });
+  const firstName = userProfile?.name?.trim().split(' ')[0] || 'Athlete';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
 
   return (
     <div className="page-container pt-8 space-y-6">
@@ -33,8 +36,13 @@ export default function Dashboard() {
         <div>
           <p className="text-white/50 text-sm mb-0.5">{today}</p>
           <h1 className="text-2xl font-display font-bold">
-            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'} 👋
+            {greeting}, {firstName}! 👋
           </h1>
+          {userProfile?.daysPerWeek && (
+            <p className="text-xs text-violet-400/80 mt-0.5 flex items-center gap-1">
+              <Dumbbell size={10} /> {userProfile.daysPerWeek}-day program · {userProfile.goal}
+            </p>
+          )}
         </div>
         <div
           onClick={() => navigate('/settings')}
